@@ -40,15 +40,42 @@ The SSPF defines a set of strategies and utilities that allows:
 * Creating client-side edge side includes (ESIs) for portions of an SSG which
   are dynamic.
 
-## SSPF Directory Structure
+## Installing SSPF
 
-These directories and files are typically revision managed by git:
+You can setup a new project using:
 
-* **bin**. Binaries and utilities that are used during the SSPF publishing
-  process; no binaries should be expected as part of the final website because
-  all SSPF destinations are pure HTML (static sites).
+    mkdir <project-name>
+    cd <project-name>
+    curl -s https://raw.githubusercontent.com/shah/static-site-publishing-framework/master/bin/setup-SSPF.sh | bash
+
+## Upgrading SSPF
+
+You can upgrade an existing project using:
+
+    cd <project-name>
+    make upgrade-SSPF
+
+## SSPF-specific Files
+
+These directories and files are typically managed by SSPF and will be replaced
+when doing an upgrade:
+
+* **bin/hugo-(version)**. Hugo static site generator binary.
+* **bin/jsonnet-(version)**. Google Jsonnet data templating library binary.
+* **Makefile**. Central Makefile which drives all other commands and utilities.
+* **tmp** directory. Temporary files created during SSPF's generation process 
+  reside here. This should not be tracked by git (include it in .gitignore).
+* **vendor** directory. Google Go (e.g. Mage) and other custom libraries reside
+  here. Only required during the SSPF code generation process, not in final 
+  publication (which is HTML static site).
+
+## SSPF Suggested Project Directory Structure
+
+The following directory structure is the recommended approach to storing
+various SSPF artifacts:
+
 * **etc**. Configuration files for binaries and scripts that are used by the
-  SSPF binaries, utilities, and Makefiles.
+  SSPF utilities and Makefiles.
 * **publication**. This directory contains the final, static content, that is 
   to be served by web servers. It could be cloned as a remote git submodule so 
   that git hooks can be created to automatically publish it to Netlify or other 
@@ -63,9 +90,3 @@ These directories and files are typically revision managed by git:
 * **support**. SSPF documentation and other support collateral reside here.
 * **tasks**. Custom Makefiles, Mage scripts, and other task runner code resides
   here.
-* **tmp**. Temporary files created during SSPF's generation process reside here.
-* **vendor**. Google Go (e.g. Mage) and other custom libraries reside here. Only 
-  required during the SSPF code generation process, not in final publication 
-  (which is HTML static site).
-* **Makefile**. Central Makefile which drives all other commands and utilities.  
-
