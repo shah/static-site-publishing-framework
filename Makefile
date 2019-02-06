@@ -41,13 +41,20 @@ default: devl
 devl:
 	cd $(SSPF_PROJECT_SSG_CONTENT_PATH) && $(SSPF_PROJECT_HUGO) serve --bind $(SSPF_PROJECT_SERVER) --baseURL http://$(SSPF_PROJECT_SERVER)
 
-check-dependencies: check-golang check-jq check-osquery check-hugo check-mage check-jsonnet
+check-dependencies: check-golang check-jq check-osquery check-hugo check-mage check-jsonnet check-gitignore
 	printf "$(GREEN)[*]$(RESET) "
 	make -v | head -1
 	echo "$(GREEN)[*]$(RESET) Shell: $$SHELL"
 
 ## Check to see if any dependencies are missing, suggest how to install them
 doctor: check-dependencies setup-devl-env
+
+GITIGNORE_OK := $(shell command -v grep '^$(SSPF_PROJECT_TMP_PATH)' .gitignore 2> /dev/null)
+check-gitignore:
+ifndef GITIGNORE_OK
+	echo "$(REDFLASH)[ ]$(RESET) .gitignore doesn't contain $(SSPF_PROJECT_TMP_PATH), you should add it"
+endif
+	echo "$(GREEN)[*]$(RESET) .gitignore appears to be OK."
 
 HUGO_INSTALLED := $(shell command -v $(SSPF_PROJECT_HUGO) 2> /dev/null)
 check-hugo:
