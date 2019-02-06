@@ -65,7 +65,7 @@ ifndef MAGE_INSTALLED
 	export GOPATH=$(SSPF_PROJECT_VENDOR_GOPATH)
 	$(SSPF_PROJECT_GOLANG_BIN) get -u -d github.com/magefile/mage
 	cd $(SSPF_PROJECT_VENDOR_GOPATH)/src/github.com/magefile/mage
-	$(SSPF_PROJECT_GOLANG_BIN) run bootstrap.go
+	PATH=$(SSPF_PROJECT_GOLANG_HOME):$$PATH $(SSPF_PROJECT_GOLANG_BIN) run bootstrap.go
 endif
 	printf "$(GREEN)[*]$(RESET) "
 	$(SSPF_PROJECT_MAGE) -version | head -n 1
