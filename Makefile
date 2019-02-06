@@ -49,12 +49,13 @@ check-dependencies: check-golang check-jq check-osquery check-hugo check-mage ch
 ## Check to see if any dependencies are missing, suggest how to install them
 doctor: check-dependencies setup-devl-env
 
-GITIGNORE_OK := $(shell command -v grep '^$(SSPF_PROJECT_TMP_PATH)' .gitignore 2> /dev/null)
+GITIGNORE_OK := $(shell grep '^tmp' .gitignore 2> /dev/null)
 check-gitignore:
 ifndef GITIGNORE_OK
-	echo "$(REDFLASH)[ ]$(RESET) .gitignore doesn't contain $(SSPF_PROJECT_TMP_PATH), you should add it"
+	echo "$(REDFLASH)[ ]$(RESET) .gitignore doesn't contain 'tmp' directory, you should add it"
+else
+	echo "$(GREEN)[*]$(RESET) .gitignore appears to be OK"
 endif
-	echo "$(GREEN)[*]$(RESET) .gitignore appears to be OK."
 
 HUGO_INSTALLED := $(shell command -v $(SSPF_PROJECT_HUGO) 2> /dev/null)
 check-hugo:
