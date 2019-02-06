@@ -170,11 +170,8 @@ setup-SSPF:
 	echo "  cd <project-name>"
 	echo "  curl -s $(SSPF_REPO_RAW_URL_HOME)/bin/setup-SSPF.sh | bash"
 
-update-SSPF:
+upgrade-SSPF:
 	curl -s $(SSPF_REPO_RAW_URL_HOME)/bin/setup-SSPF.sh | bash
-
-## Upgrades existing project with the latest version of SSPF
-upgrade-SSPF: update-SSPF doctor
 
 TARGET_MAX_CHAR_NUM=15
 # All targets should have a ## Help text above the target and they'll be automatically collected
