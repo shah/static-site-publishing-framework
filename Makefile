@@ -160,10 +160,10 @@ setup-SSPF:
 	echo "You can setup a new project using:"
 	echo "  mkdir <project-name>"
 	echo "  cd <project-name>"
-	echo "  curl $(SSPF_REPO_RAW_URL_HOME)/bin/setup-SSPF.sh | bash"
+	echo "  curl -s $(SSPF_REPO_RAW_URL_HOME)/bin/setup-SSPF.sh | bash"
 
 update-SSPF:
-	curl $(SSPF_REPO_RAW_URL_HOME)/bin/setup-SSPF.sh | bash
+	curl -s $(SSPF_REPO_RAW_URL_HOME)/bin/setup-SSPF.sh | bash
 
 ## Upgrades existing project with the latest version of SSPF
 upgrade-SSPF: update-SSPF doctor

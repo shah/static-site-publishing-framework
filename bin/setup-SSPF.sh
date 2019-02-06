@@ -31,4 +31,4 @@ JSONNET=jsonnet-v0.11.2
 curl -s --output $SSPF_PROJECT_HOME/bin/$JSONNET $SSPF_REPO_RAW_URL_HOME/bin/$JSONNET
 chmod a+x $SSPF_PROJECT_HOME/bin/$JSONNET
 
-make doctor 
+make doctor
