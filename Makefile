@@ -10,9 +10,11 @@ SSPF_PROJECT_NAME ?= $(shell basename `pwd`)
 SSPF_REPO_HOME         = shah/static-site-publishing-framework
 SSPF_REPO_RAW_URL_HOME = https://raw.githubusercontent.com/$(SSPF_REPO_HOME)/master
 
+SSPF_PROJECT_SSG_CONTENT_REL  ?= ssg-primary
 SSPF_PROJECT_BIN_PATH         ?= $(SSPF_PROJECT_HOME)/bin
+SSPF_PROJECT_LIB_PATH         ?= $(SSPF_PROJECT_HOME)/lib
 SSPF_PROJECT_CONF_PATH        ?= $(SSPF_PROJECT_HOME)/etc
-SSPF_PROJECT_SSG_CONTENT_PATH ?= $(SSPF_PROJECT_HOME)/ssg-home
+SSPF_PROJECT_SSG_CONTENT_PATH ?= $(SSPF_PROJECT_HOME)/$(SSPF_PROJECT_SSG_CONTENT_REL)
 SSPF_PROJECT_TASKS_PATH       ?= $(SSPF_PROJECT_HOME)/tasks     
 
 SSPF_PROJECT_PUBLISH_PATH ?= $(SSPF_PROJECT_HOME)/publication
@@ -33,18 +35,32 @@ SSPF_PROJECT_GOLANG_BIN           ?= $(SSPF_PROJECT_GOLANG_HOME)/bin/go
 SSPF_PROJECT_MAGE          ?= $(SSPF_PROJECT_VENDOR_GO_BIN_PATH)/mage
 SSPF_PROJECT_MAGE_CACHE    ?= $(SSPF_PROJECT_TMP_PATH)/mage-cache
 
+# Recursion tip: https://stackoverflow.com/questions/2483182/recursive-wildcards-in-gnu-make
+SSPF_PROJECT_PUML_DIAGRAM_SOURCES = $(shell find $(SSPF_PROJECT_SSG_CONTENT_REL)/ -type f -name '*.plantuml')
+SSPF_PROJECT_PUML_DIAGRAMS = $(patsubst $(SSPF_PROJECT_SSG_CONTENT_REL)/%.plantuml, $(SSPF_PROJECT_SSG_CONTENT_REL)/static/img/generated/diagrams/%.plantuml.png, $(SSPF_PROJECT_PUML_DIAGRAM_SOURCES))
+
+GREEN  := $(shell tput -Txterm setaf 2)
+YELLOW := $(shell tput -Txterm setaf 3)
+REDFLASH  := $(shell tput -Txterm setaf 1)
+WHITE  := $(shell tput -Txterm setaf 7)
+RESET  := $(shell tput -Txterm sgr0)
+
 # If install-golang target is run, this is the version of Google Go that will be installed
 SSPF_PROJECT_GOLANG_INSTALL_VERSION ?= go1.11.5
 
 default: devl
 
-devl:
-	cd $(SSPF_PROJECT_SSG_CONTENT_PATH) && $(SSPF_PROJECT_HUGO) serve --bind $(SSPF_PROJECT_SERVER) --baseURL http://$(SSPF_PROJECT_SERVER)
+devl: $(SSPF_PROJECT_PUML_DIAGRAMS)
+	cd $(SSPF_PROJECT_SSG_CONTENT_PATH) && $(SSPF_PROJECT_HUGO) serve --bind $(SSPF_PROJECT_SERVER) --baseURL http://$(SSPF_PROJECT_SERVER) --disableFastRender
 
-check-dependencies: check-golang check-jq check-osquery check-hugo check-mage check-jsonnet check-gitignore
+check-dependencies: check-golang check-java check-jq check-osquery check-hugo check-mage check-jsonnet check-gitignore
 	printf "$(GREEN)[*]$(RESET) "
 	make -v | head -1
 	echo "$(GREEN)[*]$(RESET) Shell: $$SHELL"
+
+$(SSPF_PROJECT_SSG_CONTENT_REL)/static/img/generated/diagrams/%.plantuml.png: $(SSPF_PROJECT_SSG_CONTENT_REL)/%.plantuml
+	mkdir -p "$(@D)"
+	java -jar $(SSPF_PROJECT_PLANTUML_JAR) -v -o "$@" "$<"
 
 ## Check to see if any dependencies are missing, suggest how to install them
 doctor: check-dependencies setup-devl-env
@@ -94,13 +110,22 @@ endif
 GOLANG_INSTALLED := $(shell command -v $(SSPF_PROJECT_GOLANG_BIN) 2> /dev/null)
 check-golang:
 ifndef GOLANG_INSTALLED
-	echo "$(REDFLASH)[ ]$(RESET) Did not find Google Go."
-	echo "Either check your $$PATH to make sure 'go' is available or, install it using:"
-	echo "    make install-golang"
-	exit 1
+	echo "$(REDFLASH)[ ]$(RESET) Did not find Google Go, needed for running Mage"
+	echo "    Either check your PATH to make sure 'go' is available, or install it using:"
+	echo "        make install-golang"
 else
 	printf "$(GREEN)[*]$(RESET) "
 	$(SSPF_PROJECT_GOLANG_BIN) version
+endif
+
+JAVA_INSTALLED := $(shell command -v java 2> /dev/null)
+check-java:
+ifndef JAVA_INSTALLED
+	echo "$(REDFLASH)[ ]$(RESET) Did not find Oracle Java, needed for running PlantUML"
+	echo "    Either check your JAVA_HOME/bin to make sure 'java' is available, or install it."
+else
+	printf "$(GREEN)[*]$(RESET) "
+	java --version | head -n 1 
 endif
 
 JQ_INSTALLED := $(shell command -v jq 2> /dev/null)
@@ -190,3 +215,6 @@ help:
 		} \
 	} \
 	{ lastLine = $$0 }' $(MAKEFILE_LIST)
+
+-include $(SSPF_PROJECT_BIN_PATH)/*.make.inc
+-include $(SSPF_PROJECT_LIB_PATH)/*.make.inc

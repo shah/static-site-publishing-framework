@@ -6,7 +6,7 @@
 SSPF_REPO_HOME=shah/static-site-publishing-framework
 SSPF_REPO_RAW_URL_HOME=https://raw.githubusercontent.com/$SSPF_REPO_HOME/master
 
-sudo apt install -qq make curl git jq
+sudo apt install -qq make curl git jq tree graphviz
 
 SSPF_PROJECT_HOME=`pwd`
 SSPF_PROJECT_NAME=`basename $SSPF_PROJECT_HOME`
@@ -20,6 +20,7 @@ mkdir -p $SSPF_PROJECT_HOME/bin
 rm -f Makefile
 rm -f $SSPF_PROJECT_HOME/bin/hugo-*
 rm -f $SSPF_PROJECT_HOME/bin/jsonnet-*
+rm -f $SSPF_PROJECT_HOME/bin/plantuml*.jar
 
 curl -s --output $SSPF_PROJECT_HOME/Makefile $SSPF_REPO_RAW_URL_HOME/Makefile
 
@@ -30,5 +31,8 @@ chmod a+x $SSPF_PROJECT_HOME/bin/$HUGO
 JSONNET=jsonnet-v0.11.2
 curl -s --output $SSPF_PROJECT_HOME/bin/$JSONNET $SSPF_REPO_RAW_URL_HOME/bin/$JSONNET
 chmod a+x $SSPF_PROJECT_HOME/bin/$JSONNET
+
+PLANTUML_JAR=plantuml.1.2019.0.jar
+curl -s --output $SSPF_PROJECT_HOME/bin/$PLANTUML_JAR $SSPF_REPO_RAW_URL_HOME/bin/$PLANTUML_JAR
 
 make doctor
