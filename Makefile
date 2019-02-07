@@ -21,9 +21,10 @@ SSPF_PROJECT_PUBLISH_PATH ?= $(SSPF_PROJECT_HOME)/publication
 SSPF_PROJECT_TMP_PATH     ?= $(SSPF_PROJECT_HOME)/tmp
 SSPF_PROJECT_VENDOR_PATH  ?= $(SSPF_PROJECT_HOME)/vendor
 
-SSPF_PROJECT_SERVER  ?= $(shell osqueryi --json "select * from interface_addresses where interface = 'eth0'" | jq --raw-output '.[0].address')
-SSPF_PROJECT_HUGO    ?= $(SSPF_PROJECT_BIN_PATH)/hugo-0.54
-SSPF_PROJECT_JSONNET ?= $(SSPF_PROJECT_BIN_PATH)/jsonnet-v0.11.2
+SSPF_PROJECT_SERVER   ?= $(shell osqueryi --json "select * from interface_addresses where interface = 'eth0'" | jq --raw-output '.[0].address')
+SSPF_PROJECT_HUGO     ?= $(SSPF_PROJECT_BIN_PATH)/hugo-0.54
+SSPF_PROJECT_JSONNET  ?= $(SSPF_PROJECT_BIN_PATH)/jsonnet-v0.11.2
+SSPF_PROJECT_PLANTUML ?= $(SSPF_PROJECT_BIN_PATH)/plantuml.1.2019.0.jar
 
 SSPF_PROJECT_VENDOR_GOPATH        ?= $(SSPF_PROJECT_VENDOR_PATH)/go
 SSPF_PROJECT_VENDOR_GO_SRC_PATH   := $(SSPF_PROJECT_VENDOR_PATH)/go/src
@@ -37,7 +38,7 @@ SSPF_PROJECT_MAGE_CACHE    ?= $(SSPF_PROJECT_TMP_PATH)/mage-cache
 
 # Recursion tip: https://stackoverflow.com/questions/2483182/recursive-wildcards-in-gnu-make
 SSPF_PROJECT_PUML_DIAGRAM_SOURCES = $(shell find $(SSPF_PROJECT_SSG_CONTENT_REL)/ -type f -name '*.plantuml')
-SSPF_PROJECT_PUML_DIAGRAMS = $(patsubst $(SSPF_PROJECT_SSG_CONTENT_REL)/%.plantuml, $(SSPF_PROJECT_SSG_CONTENT_REL)/static/img/generated/diagrams/%.plantuml.png, $(SSPF_PROJECT_PUML_DIAGRAM_SOURCES))
+SSPF_PROJECT_PUML_DIAGRAMS_PNG = $(patsubst $(SSPF_PROJECT_SSG_CONTENT_REL)/%.plantuml, $(SSPF_PROJECT_SSG_CONTENT_PATH)/static/img/generated/diagrams/%.plantuml.png, $(SSPF_PROJECT_PUML_DIAGRAM_SOURCES))
 
 GREEN  := $(shell tput -Txterm setaf 2)
 YELLOW := $(shell tput -Txterm setaf 3)
@@ -50,17 +51,17 @@ SSPF_PROJECT_GOLANG_INSTALL_VERSION ?= go1.11.5
 
 default: devl
 
-devl: $(SSPF_PROJECT_PUML_DIAGRAMS)
+devl: $(SSPF_PROJECT_PUML_DIAGRAMS_PNG)
 	cd $(SSPF_PROJECT_SSG_CONTENT_PATH) && $(SSPF_PROJECT_HUGO) serve --bind $(SSPF_PROJECT_SERVER) --baseURL http://$(SSPF_PROJECT_SERVER) --disableFastRender
 
-check-dependencies: check-golang check-java check-jq check-osquery check-hugo check-mage check-jsonnet check-gitignore
+check-dependencies: check-golang check-java check-jq check-osquery check-hugo check-mage check-jsonnet check-gitignore check-plantuml
 	printf "$(GREEN)[*]$(RESET) "
 	make -v | head -1
 	echo "$(GREEN)[*]$(RESET) Shell: $$SHELL"
 
-$(SSPF_PROJECT_SSG_CONTENT_REL)/static/img/generated/diagrams/%.plantuml.png: $(SSPF_PROJECT_SSG_CONTENT_REL)/%.plantuml
+$(SSPF_PROJECT_SSG_CONTENT_PATH)/static/img/generated/diagrams/%.plantuml.png: $(SSPF_PROJECT_SSG_CONTENT_REL)/%.plantuml
 	mkdir -p "$(@D)"
-	java -jar $(SSPF_PROJECT_PLANTUML_JAR) -v -o "$@" "$<"
+	java -jar $(SSPF_PROJECT_PLANTUML) -v -tpng -o "$(@D)" "$<"
 
 ## Check to see if any dependencies are missing, suggest how to install them
 doctor: check-dependencies setup-devl-env
@@ -127,6 +128,14 @@ else
 	printf "$(GREEN)[*]$(RESET) "
 	java --version | head -n 1 
 endif
+
+check-plantuml:
+	printf "$(GREEN)[*]$(RESET) "
+	java -jar $(SSPF_PROJECT_PLANTUML) -version | head -n 1 
+
+check-plantuml-is-latest:
+	printf "$(GREEN)[*]$(RESET) "
+	java -jar $(SSPF_PROJECT_PLANTUML) -checkversion 
 
 JQ_INSTALLED := $(shell command -v jq 2> /dev/null)
 check-jq:
@@ -195,6 +204,7 @@ setup-SSPF:
 	echo "  cd <project-name>"
 	echo "  curl -s $(SSPF_REPO_RAW_URL_HOME)/bin/setup-SSPF.sh | bash"
 
+## Upgrade to the latest version of the SSPF (from source)
 upgrade-SSPF:
 	curl -s $(SSPF_REPO_RAW_URL_HOME)/bin/setup-SSPF.sh | bash
 
