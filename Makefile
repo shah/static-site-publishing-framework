@@ -36,10 +36,6 @@ SSPF_PROJECT_GOLANG_BIN           ?= $(SSPF_PROJECT_GOLANG_HOME)/bin/go
 SSPF_PROJECT_MAGE          ?= $(SSPF_PROJECT_VENDOR_GO_BIN_PATH)/mage
 SSPF_PROJECT_MAGE_CACHE    ?= $(SSPF_PROJECT_TMP_PATH)/mage-cache
 
-# Recursion tip: https://stackoverflow.com/questions/2483182/recursive-wildcards-in-gnu-make
-SSPF_PROJECT_PUML_DIAGRAM_SOURCES = $(shell find $(SSPF_PROJECT_SSG_CONTENT_REL)/ -type f -name '*.plantuml')
-SSPF_PROJECT_PUML_DIAGRAMS_PNG = $(patsubst $(SSPF_PROJECT_SSG_CONTENT_REL)/%.plantuml, $(SSPF_PROJECT_SSG_CONTENT_PATH)/static/img/generated/diagrams/%.plantuml.png, $(SSPF_PROJECT_PUML_DIAGRAM_SOURCES))
-
 GREEN  := $(shell tput -Txterm setaf 2)
 YELLOW := $(shell tput -Txterm setaf 3)
 REDFLASH  := $(shell tput -Txterm setaf 1)
@@ -49,22 +45,42 @@ RESET  := $(shell tput -Txterm sgr0)
 # If install-golang target is run, this is the version of Google Go that will be installed
 SSPF_PROJECT_GOLANG_INSTALL_VERSION ?= go1.11.5
 
+# Find all PlantUML diagrams in the source and prepare list to generate the *.png versions
+# Recursion tip: https://stackoverflow.com/questions/2483182/recursive-wildcards-in-gnu-make
+SSPF_PROJECT_PUML_DIAGRAM_SOURCES = $(shell find $(SSPF_PROJECT_SSG_CONTENT_REL)/ -type f -name '*.diagram.puml')
+SSPF_PROJECT_PUML_DIAGRAMS_PNG = $(patsubst $(SSPF_PROJECT_SSG_CONTENT_REL)/%.diagram.puml, $(SSPF_PROJECT_SSG_CONTENT_PATH)/static/img/generated/diagrams/%.diagram.png, $(SSPF_PROJECT_PUML_DIAGRAM_SOURCES))
+
 default: devl
 
-devl: $(SSPF_PROJECT_PUML_DIAGRAMS_PNG)
-	cd $(SSPF_PROJECT_SSG_CONTENT_PATH) && $(SSPF_PROJECT_HUGO) serve --bind $(SSPF_PROJECT_SERVER) --baseURL http://$(SSPF_PROJECT_SERVER) --disableFastRender
+devl: generate-all
+	cd $(SSPF_PROJECT_SSG_CONTENT_PATH) && \
+		$(SSPF_PROJECT_HUGO) serve --bind $(SSPF_PROJECT_SERVER) --baseURL http://$(SSPF_PROJECT_SERVER) --disableFastRender
+
+publish: generate-all
+	rm -rf $(SSPF_PROJECT_PUBLISH_PATH)
+	cd $(SSPF_PROJECT_SSG_CONTENT_PATH) && \
+		$(SSPF_PROJECT_HUGO) --destination $(SSPF_PROJECT_PUBLISH_PATH) --minify
+
+$(SSPF_PROJECT_SSG_CONTENT_PATH)/static/img/generated/diagrams/%.diagram.png: $(SSPF_PROJECT_SSG_CONTENT_REL)/%.diagram.puml
+	echo "Generating diagram: $<"
+	mkdir -p "$(@D)"
+	java -jar $(SSPF_PROJECT_PLANTUML) -tpng -o "$(@D)" "$<"
+
+## Delete all generated PlantUML diagrams
+clean-generated-diagrams-puml.png:
+	rm -rf $(SSPF_PROJECT_SSG_CONTENT_PATH)/static/img/generated
+
+generate-all: $(SSPF_PROJECT_PUML_DIAGRAMS_PNG)
+
+clean-generated-all: clean-generated-diagrams-puml.png
+
+## Check to see if any dependencies are missing, suggest how to install them
+doctor: check-dependencies setup-devl-env
 
 check-dependencies: check-golang check-java check-jq check-osquery check-hugo check-mage check-jsonnet check-gitignore check-plantuml
 	printf "$(GREEN)[*]$(RESET) "
 	make -v | head -1
 	echo "$(GREEN)[*]$(RESET) Shell: $$SHELL"
-
-$(SSPF_PROJECT_SSG_CONTENT_PATH)/static/img/generated/diagrams/%.plantuml.png: $(SSPF_PROJECT_SSG_CONTENT_REL)/%.plantuml
-	mkdir -p "$(@D)"
-	java -jar $(SSPF_PROJECT_PLANTUML) -v -tpng -o "$(@D)" "$<"
-
-## Check to see if any dependencies are missing, suggest how to install them
-doctor: check-dependencies setup-devl-env
 
 GITIGNORE_OK := $(shell grep '^tmp' .gitignore 2> /dev/null)
 check-gitignore:
@@ -129,7 +145,17 @@ else
 	java --version | head -n 1 
 endif
 
-check-plantuml:
+GRAPHVIZ_DOT_INSTALLED := $(shell command -v dot 2> /dev/null)
+check-graphviz-dot:
+ifndef GRAPHVIZ_DOT_INSTALLED
+	echo "$(REDFLASH)[ ]$(RESET) Did not find Graphviz Dot (for PlantUML), install it using:"
+	echo "    sudo apt-get install graphviz"
+else
+	printf "$(GREEN)[*]$(RESET) "
+	dot -V
+endif
+
+check-plantuml: check-graphviz-dot
 	printf "$(GREEN)[*]$(RESET) "
 	java -jar $(SSPF_PROJECT_PLANTUML) -version | head -n 1 
 
@@ -225,6 +251,7 @@ help:
 		} \
 	} \
 	{ lastLine = $$0 }' $(MAKEFILE_LIST)
+	echo $(SSPF_PROJECT_DIAGRAMS_GEN_PATH)
 
 -include $(SSPF_PROJECT_BIN_PATH)/*.make.inc
 -include $(SSPF_PROJECT_LIB_PATH)/*.make.inc
